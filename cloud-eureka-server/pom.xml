@@ -9,13 +9,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>cloud-consumer-order</artifactId>
+    <artifactId>cloud-eukera-server</artifactId>
 
     <dependencies>
-        <!--引入 Eureka Client  -->
+        <!--引入 Eureka 组件作为服务注册中心  -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+            <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
         </dependency>
         <!-- 引入自己定义的api通用包 -->
         <dependency>
@@ -49,6 +49,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 
 </project>

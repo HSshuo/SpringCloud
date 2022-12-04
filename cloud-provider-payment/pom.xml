@@ -12,6 +12,11 @@
     <artifactId>cloud-provider-payment</artifactId>
 
     <dependencies>
+        <!--引入 Eureka Client  -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
         <!-- 引入自己定义的api通用包 -->
         <dependency>
             <groupId>org.example</groupId>
