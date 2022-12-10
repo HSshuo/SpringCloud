@@ -1,5 +1,6 @@
 package com.example.springcloud.config;
 
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -13,7 +14,13 @@ import org.springframework.web.client.RestTemplate;
  */
 @Configuration
 public class ApplicationContextConfig {
+
+    /**
+     * @LoadBalanced 由于配置的是服务名称，对应两个服务。需要指定默认的负载均衡机制
+     * @return
+     */
     @Bean
+    @LoadBalanced
     public RestTemplate restTemplate()
     {
         return new RestTemplate();
