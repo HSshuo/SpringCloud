@@ -129,3 +129,43 @@ eureka:
 ![img.png](img.png)
 4. 测试集群是否成功、访问 http://eureka7002.com:7002/、http://eureka7001.com:7001/
 ![img_1.png](img_1.png)
+
+<br>
+
+#### Eureka 自我保护
+- 默认情况下，如果 Eureka Server 在一定时间内没有收到某个微服务实例的心跳，Eureka Server 将会注销该实例（默认 90 秒）。但是当发生网络分区故障（延时、卡顿、拥挤）时，微服务与 Eureka Sever 之间无法正常通信，由于服务本身是健康的，所以此时不应该注销这个微服务。Eureka 通过 自我保护模式 解决这个问题，当 Eureka Server 节点 在短时间内丢失过多客户端时（可能发生了网络分区故障），那么该节点会进入自我保护模式
+- 某时刻某一个微服务不可用了， Eureka 不会立刻清理，依旧会对该微服务的信息进行保存
+- 属于 CAP 理论的 AP 设计思想，保证高可用、分区容错性
+- 标志字样：
+  ![alt](https://uploadfiles.nowcoder.com/images/20221211/630417200_1670759531891/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+**取消自我保护机制**
+
+``` yml
+# Eureka Client 配置
+eureka:
+  instance:
+    # Eureka 客户端向服务端发送心跳的时间间隔，单位为秒（默认30秒）
+    lease-renewal-interval-in-seconds: 1
+    # Eureka 服务端收到最后一次心跳后等待时间上限，单位为秒（默认90秒），超时将剔除服务
+    # 如果 Eureka 服务端同时有此项配置，服务端优先级大于客户端
+    lease-expiration-duration-in-seconds: 2
+    
+    
+# Eureka Sever 配置   
+eureka:
+  server:
+    # 关闭自我保护机制，保证不可用服务及时被剔除
+    enable-self-preservation: false
+    eviction-interval-timer-in-ms: 2000
+```
+
+<br>
+<br>
+
+# Zookeeper
+
+<br>
+<br>
