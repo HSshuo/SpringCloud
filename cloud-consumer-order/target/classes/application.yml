@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: 8081
 
 spring:
   application:
@@ -15,3 +15,6 @@ eureka:
       # defaultZone: http://localhost:7001/eureka
       # 集群版
       defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    instance-id: order8081
+    prefer-ip-address: true

@@ -5,9 +5,12 @@ import com.example.springcloud.entities.Payment;
 import com.example.springcloud.service.PaymentService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * @author SHshuo
@@ -19,6 +22,12 @@ public class PaymentController {
 
     @Value("${server.port}")
     private String serverPort;
+
+    /**
+     * 对于注册进 Eureka 里面的微服务，可以通过服务发现来获得该服务的信息
+     */
+    @Resource
+    private DiscoveryClient discoveryClient;
 
     @Resource
     private PaymentService paymentService;
@@ -52,5 +61,21 @@ public class PaymentController {
         }else{
             return new CommonResult(444,"没有对应记录,查询ID: " + id,null);
         }
+    }
+
+    @GetMapping(value = "/payment/discovery")
+    public Object discovery()
+    {
+        List<String> services = discoveryClient.getServices();
+        for (String element : services) {
+            log.info(element);
+        }
+
+        List<ServiceInstance> instances = discoveryClient.getInstances("CLOUD-PAYMENT-SERVICE");
+        for (ServiceInstance element : instances) {
+            log.info(element.getServiceId() + "\t" + element.getHost() + "\t" + element.getPort() + "\t"
+                    + element.getUri());
+        }
+        return this.discoveryClient;
     }
 }
