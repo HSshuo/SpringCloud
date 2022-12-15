@@ -166,6 +166,25 @@ eureka:
 <br>
 
 # Zookeeper
+- 服务注册的节点是临时节点，属于 CAP 理论的 CP 设计思想，保证数据一致性、分区容错性
+- 引入配置与 Eureka 大体一致，都是使用 @EnableDiscoveryClient、@LoadBalanced 注解
+
+<br>
+
+#### 安装
+- [Docker 中启动 ZooKeeper](https://cloud.tencent.com/developer/article/1707754)
+
+名称 | 命令
+:---: | :---:
+使用 Docker 安装 | docker run --name zookeeper -p 2181:2181 --restart always -d  zookeeper
+进入容器 | docker exec -it b3cd072581b2 bash
+进入 zookeeper 客户端 | ./bin/zkCli.sh -server 127.0.0.1:2181
+验证是否注册上节点 | ![alt](https://uploadfiles.nowcoder.com/images/20221214/630417200_1671026583595/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+<br>
+
+# Consul
 
 <br>
 <br>
