@@ -13,7 +13,39 @@
 <br>
 <br>
 
+# 背景知识
+#### 什么是服务治理
+- 在传统的 RPC 远程调用框架中，管理每个服务与服务之间依赖关系比较复杂、管理比较复杂，所以需要使用服务治理，管理服务与服务之间的依赖关系，可以实现服务调用、负载均衡、容错等，实现服务注册与发现
+
+<br>
+
+#### CAP 理论
+- CAP：Consistency（强一致性）、Availability（可用性）、Partition tolerance（分区容错性）
+- 一个分布式系统不可能同时很好的满足一致性、可用性和分区容错性这三个需求，最多只能同时较好的满足两个。CA一般是单点集群，在可拓展上不太强；CP一般性能不是特别高；AP一般对一致性要求低一些
+- CAP 理论关注粒度是数据，而不是整体系统设计的策略
+  ![alt](https://uploadfiles.nowcoder.com/images/20221218/630417200_1671355824769/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+<br>
+
 # SpringCloud 服务注册与发现
+# Eureka
+#### 概念
+- SpringCloud 封装了 Netfix 公司开发的 Eureka 模块来实现服务治理
+- Eureka 采用了 CS 的设计架构，Eureka Server 作为服务注册功能的服务器，是服务注册中心。而系统中的其他微服务，使用 Eureka 的客户端连接到 Eureka Server 并维持心跳连接、这样系统的维护人员就可以通过 Eureka Server 来监控系统中各个微服务是否正常运行
+- 在服务注册与发现中，有一个注册中心。当服务器启动的时候，会把当前自己服务器的信息 比如 服务地址通讯地址等以别名方式注册到注册中心上。另一方（消费者|服务提供者）以该别名的方式去注册中心上获取到实际的服务通讯地址，然后再实现本地 RPC 调用
+- RPC 远程调用框架的思想：在于注册中心，因为使用注册中心管理每个服务与服务之间的一个依赖关系（服务治理概念）。在任何 RPC 远程框架中，都会有一个注册中心（存放服务地址相关信息（接口地址））
+- [类似于 Dubbo 系统架构图](https://blog.nowcoder.net/hshuo/213162?page=1)  
+  ![alt](https://uploadfiles.nowcoder.com/images/20221203/630417200_1670068031025/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+#### 组件
+- Eureka Server 提供服务注册服务：各个微服务节点通过配置启动后，会在 Eureka Server 中进行注册，这样 Eureka Server 中的服务注册表中将会存储所有可用服务节点的信息，服务节点的信息可以在界面中直观看到
+- Eureka Client 通过注册中心进行访问：是一个 Java 客户端，用于简化 Eureka Server 的交互，客户端同时也具备一个内置的、使用轮询（round-robin）负载算法的负载均衡器。在应用启动后，将会向 Eureka Server 发送心跳（默认周期为 30 秒）。如果 Eureka Server 在多个心跳周期内没有接收到某个节点的心跳，Eureka Server将会从服务注册表中把这个服务节点移除（默认 90 秒）
+
+<br>
+
 #### 单机 Eureka 配置
 - 主要通过 pom.xml 引入 spring-cloud-starter-netflix-eureka-client、 spring-cloud-starter-netflix-eureka-server。之后再 yml 添加相应配置，主启动类添加 @EnableEurekaClient、 @EnableEurekaServer
 1. 引入 pom 依赖，分为 Eureka 的服务注册中心，和 Eureka 的客户端
@@ -185,6 +217,43 @@ eureka:
 <br>
 
 # Consul
+#### 概念
+- Consul 是一套开源的分布式服务发现和配置管理系统，由 HashiCorp 公司用 Go 语言开发
+- 提供了微服务系统中的服务治理、配置中心、控制总线等功能。这些功能中的每一个都可以根据需要单独使用，也可以一起使用以构建全方位的服务网格，总之 Consul 提供了一种完整的服务网格解决方案
+- 具有很多有点。包括：基于 raft 协议，比较简洁；支持健康检查，同时支持 HTTP 和 DNS 协议；支持跨数据中心的 WAN 集群；提供图形界面；跨平台，支持 Linux、Mac、Windows; Key-Value 的存储方式
+- [Consul 官网地址](https://developer.hashicorp.com/consul/docs/intro)
+- [Spring Cloud Consul](https://www.springcloud.cc/spring-cloud-consul.html)
+
+<br>
+
+#### 安装
+- [Docker 中启动 Consul](https://blog.csdn.net/weixin_44690195/article/details/124337028)
+
+名称 | 命令
+:---: | :---:
+使用 Docker 安装 | docker run --name consul1 -d -p 8500:8500 -p 8300:8300 -p 8301:8301 -p 8302:8302 -p 8600:8600 consul agent -server -bootstrap-expect=1 -ui -bind=0.0.0.0 -client=0.0.0.0
+访问客户端 | http://47.95.211.172:8500/
+
+<br>
+
+#### 缺点
+- Consul 所在的 HashiCorp 公司宣布，不允许中国境内使用该公司旗下 Terraform、Consul、Vagrant 企业版
+
+
+<br>
+<br>
+
+# Nacos
+- 目前章节主要包含 SpringCloud 内容，后续会补充 SpringCloudAlibaba
+
+<br>
+<br>
+
+# 总结
+- 一般会选择 AP + 最终一致性的方案来完成
+- 简单来讲：AP在系统数据不同步的时候访问会返回旧值、CP在系统数据不同步的时候访问会返回错误状态（因为要保证系统之间的一致性）
+
+![alt](https://uploadfiles.nowcoder.com/images/20221218/630417200_1671355597916/D2B5CA33BD970F64A6301FA75AE2EB22)
 
 <br>
 <br>

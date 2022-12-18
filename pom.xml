@@ -16,6 +16,8 @@
         <module>cloud-provider-payment-slave</module>
         <module>cloud-provider-payment-zookeeper</module>
         <module>cloud-consumer-order-zookeeper</module>
+        <module>cloud-provider-payment-consul</module>
+        <module>cloud-consumer-order-consul</module>
     </modules>
     <packaging>pom</packaging>
 
