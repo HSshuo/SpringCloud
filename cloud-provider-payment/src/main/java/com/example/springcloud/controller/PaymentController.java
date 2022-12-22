@@ -38,8 +38,7 @@ public class PaymentController {
      * @return
      */
     @PostMapping(value = "/payment/create")
-    public CommonResult create(@RequestBody Payment payment)
-    {
+    public CommonResult<Payment> create(@RequestBody Payment payment) {
         int result = paymentService.create(payment);
         log.info("*****插入操作返回结果:" + result);
 
@@ -52,8 +51,7 @@ public class PaymentController {
     }
 
     @GetMapping(value = "/payment/get/{id}")
-    public CommonResult<Payment> getPaymentById(@PathVariable("id") Long id)
-    {
+    public CommonResult<Payment> getPaymentById(@PathVariable("id") Long id) {
         Payment payment = paymentService.getPaymentById(id);
         log.info("*****查询结果:{}", payment);
         if (payment != null) {
@@ -64,8 +62,7 @@ public class PaymentController {
     }
 
     @GetMapping(value = "/payment/discovery")
-    public Object discovery()
-    {
+    public Object discovery() {
         List<String> services = discoveryClient.getServices();
         for (String element : services) {
             log.info(element);

@@ -16,7 +16,7 @@ import org.springframework.web.client.RestTemplate;
 public class ApplicationContextConfig {
 
     /**
-     * @LoadBalanced 由于配置的是服务名称，对应两个服务。需要指定默认的负载均衡机制
+     * @LoadBalanced Ribbon 会给 RestTemplate 请求添加一个拦截器，在拦截器中获取注册中心的所有可用服务，通过获取到的服务信息（IP + port） 替换 serviceId 实现负载均衡请求
      * @return
      */
     @Bean
