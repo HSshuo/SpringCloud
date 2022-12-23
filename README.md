@@ -257,3 +257,97 @@ eureka:
 
 <br>
 <br>
+
+# SpringCloud 服务负载与调用
+# 背景知识
+#### 负载均衡的概念
+- 可以参考 [Dubbo 的负载均衡](https://blog.nowcoder.net/n/078d7469b60f4fc78066519d506a027c)
+- 简单来说就是将用户的请求平摊的分配到多个服务上，从而达到系统的高可用。常见的负载均衡有软件 Nginx、LVS、硬件 F5 等
+
+<br>
+
+#### 负载均衡的分类
+- 进程内的负载均衡：将负载均衡逻辑集成到消费方，消费方从服务注册中心获知有哪些地址可用，然后自己再从这些地址中选择出一个合适的服务器。它属于一个类库，集成于消费方进程，消费方通过它来获取服务提供方的地址。例如：Ribbon
+- 集中式的负载均衡：在服务的消费方和提供方之间使用独立的负载均衡设施，由该设施负责把访问请求通过某种策略转发至服务的提供方。例如：F5、Nginx
+
+<br>
+<br>
+
+# Ribbon
+#### 概念
+- SpringCloud Ribbon 是基于 Netflix Ribbon 实现的一套客户端负载均衡的工具
+- Ribbon 是 Netflix 发布的开源项目，主要功能是提供客户端的软件负载均衡算法和服务调用。Ribbon 客户端组件提供一系列完善的配置项如连接超时，重试等。简单来说，就是在配置文件中列出 LoadBalancer 后面所有的机器，Ribbon 会自动的帮助你基于某种规则（简单轮询、随机连接等）去连接这些机器。同时我们也很容易使用 Ribbon 实现自定义的负载均衡算法
+
+<br>
+
+#### 使用
+- Ribbon 是一个软负载均衡客户端组件，可以和其他客户端结合使用，例如：Eureka。
+- 但是 spring-cloud-starter-netflix-eureka-client 3.0版本以上已经将 Ribbon 替换成了 LoadBalancer，所以需要我们手动添加依赖 spring-cloud-starter-netflix-ribbon
+- [Maven 仓库地址](https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-netflix-ribbon)   
+  ![alt](https://uploadfiles.nowcoder.com/images/20221219/630417200_1671426020370/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+#### 实质
+- **负载均衡 + RestTemplate**
+- RestTemplate 有很多方法：getForObject()、getForEntity()、postForObject()、postForEntity()
+- Object 返回的是 JSON，Entity 返回的是 ResponseEntity 对象（响应头、状态码、响应体）等信息
+- [RestTemplate 官网](https://docs.spring.io/spring-framework/docs/5.2.2.RELEASE/javadoc-api/org/springframework/web/client/RestTemplate.html)
+
+<br>
+
+#### 负载均衡算法
+- RoundRobinRule：轮询
+- RandomRule：随机
+- RestryRule：先按照 RoundRobinRule 策略获取服务，如果获取服务失败则在指定时间内会进行重试，获取可用的服务
+- WeightedResponseTimeRule：对 RoundRobinRule 的拓展，响应速度越快的实例选择权重越大，越容易被选择
+- BestAvailableRule：会先过滤由于多次访问故障而处于断路器跳闸状态的服务，然后选择一个并发量最小的服务
+- AvailabilityFilteringRule：会先过滤故障实例，再选择并发较小的实例
+- ZoneAvoidanceRule：默认规则，复合判断 server 所在区域的性能和 server 的可用性选择服务器
+
+<br>
+
+#### Ribbon 与 Nginx 的区别
+- Ribbon 是本地负载均衡客户端，在调用微服务接口时候，会在注册中心上获取注册信息服务列表之后缓存到 JVM 本地，从而在本地实现 RPC 远程服务调用技术
+- Nginx 是服务器负载均衡，客户端所有请求都会交给 Nginx，然后由 Nginx 实现转发请求。也就是负载均衡是由服务端实现的
+
+<br>
+
+#### 缺点
+- [ribbon 官网地址](https://github.com/Netflix/ribbon)
+- 目前处于维护状态，后期致力于将 LoadBalancer 平替 Ribbon
+  ![alt](https://uploadfiles.nowcoder.com/images/20221219/630417200_1671423839057/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+#### 遇到问题
+- 使用 SpringCloud3.0 以上版本还仍然想用 ribbon 的时候，会出现我的服务已经成功注册到eureka server 中了，而 ribbon 服务器找不到已经注册的服务。猜测的因为 ribbon 服务器没有在eureka server中注册成功，所以不能识别主机名称。
+- 翻阅解决的主要方式就是降低版本配置
+- [eureka中显示有服务但是通过ribbon调用显示No instances available for service-hello的问题](https://blog.51cto.com/u_15707676/5857021)
+- [Ribbon and Eureka - No instances available](https://stackoverflow.com/questions/46747246/ribbon-and-eureka-no-instances-available)
+
+<br>
+<br>
+
+
+# OpenFeign
+#### Feign 概念
+- Feign 是一个声明式 WebService 客户端。使用 Feign 能让编写 WebService 客户端更加简单，更容易
+- Feign 内置了 Ribbon，用来做客户端的负载均衡，去调用服务注册中心的服务。不同的是，Feign 进一步封装，只需要通过定义服务绑定接口且以声明式的方法，从而完成服务调用。有点类似于 Dubbo
+- 前面在使用 Ribbon + RestTemplate 时，利用 RestTemplate 对 http 请求的封装处理，形成了一套模板化的调用方法。但是在实际开发中，由于对服务依赖的调用可能不止一处，往往一个接口会被多处调用，所以通常都会针对每个微服务自行封装一些客户端类来包装这些依赖服务的调用。所以，Feign 在此基础上做了进一步封装，有他来帮助我们定义和实现依赖服务接口。在 Feign 的实现下，我们只需要创建一个接口并使用注释的方式来配置它，即可完成对服务提供者的接口绑定，简化了使用 Ribbon 时，自动封装服务调用客户端的开发量
+
+<br>
+
+#### OpenFeign 概念
+- 在 Feign 的基础上支持 SpringMVC 注解 @RequestMapping 等等。可以通过 @FeignClient 解析 @RequestMapping 注解下的接口，并通过动态代理的方式产生实现类，实现类中做负载均衡并调用其他服务。
+- 新版本的 OpenFeign 已经不在内置 Ribbon
+
+<br>
+
+#### 使用
+- Feign 提供了日志打印功能，我们可以通过配置来调整日志级别，从而了解 Feign 中 Http 请求的细节。也就是对 Feign 接口的调用情况进行监控和输出
+- Feign 也可以对超时进行配置  
+  ![alt](https://uploadfiles.nowcoder.com/images/20221223/630417200_1671780327715/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+<br>

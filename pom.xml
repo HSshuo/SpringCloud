@@ -18,6 +18,7 @@
         <module>cloud-consumer-order-zookeeper</module>
         <module>cloud-provider-payment-consul</module>
         <module>cloud-consumer-order-consul</module>
+        <module>cloud-comsumer-order-openFeign</module>
     </modules>
     <packaging>pom</packaging>
 
