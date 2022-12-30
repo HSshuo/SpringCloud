@@ -307,6 +307,26 @@ eureka:
 
 <br>
 
+**更改默认的算法**
+- 注意不能放在 @ComponentScan 所扫描的当前包下以及子包下，否则我们自定义的这个配置类就会被所有的Ribbon客户端所共享，达不到特殊化定制的目的了。   
+  ![alt](https://uploadfiles.nowcoder.com/images/20221230/630417200_1672394422342/D2B5CA33BD970F64A6301FA75AE2EB22)
+- 手写一个@Configuration配置类，返回对应的算法
+  ![alt](https://uploadfiles.nowcoder.com/images/20221230/630417200_1672394276952/D2B5CA33BD970F64A6301FA75AE2EB22)
+- 在对应的 @Controller 层或者主启动类上面添加 @RibbonClient 注解
+  ![alt](https://uploadfiles.nowcoder.com/images/20221230/630417200_1672394367946/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+
+**自定义算法**
+- 在配置类里面写对应的规则
+  ![alt](https://uploadfiles.nowcoder.com/images/20221230/630417200_1672395081756/D2B5CA33BD970F64A6301FA75AE2EB22)
+- 通过 @DiscoveryClient 获取对应服务名的所有服务
+  ![alt](https://uploadfiles.nowcoder.com/images/20221230/630417200_1672395098493/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+
 #### Ribbon 与 Nginx 的区别
 - Ribbon 是本地负载均衡客户端，在调用微服务接口时候，会在注册中心上获取注册信息服务列表之后缓存到 JVM 本地，从而在本地实现 RPC 远程服务调用技术
 - Nginx 是服务器负载均衡，客户端所有请求都会交给 Nginx，然后由 Nginx 实现转发请求。也就是负载均衡是由服务端实现的

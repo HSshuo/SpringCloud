@@ -12,12 +12,12 @@
     <artifactId>cloud-consumer-order</artifactId>
 
     <dependencies>
-        <!--引入 Eureka Client  -->
+        <!--引入 Eureka Client  3.0 以下版本携带 ribbon-->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
-<!--        &lt;!&ndash;引入 ribbon 注意要加版本号，不然引入失败 &ndash;&gt;-->
+<!--        &lt;!&ndash;自己手动引入 ribbon 注意要加版本号，不然引入失败 &ndash;&gt;-->
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.cloud</groupId>-->
 <!--            <artifactId>spring-cloud-starter-netflix-ribbon</artifactId>-->
