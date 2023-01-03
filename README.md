@@ -369,5 +369,225 @@ eureka:
 - Feign 也可以对超时进行配置  
   ![alt](https://uploadfiles.nowcoder.com/images/20221223/630417200_1671780327715/D2B5CA33BD970F64A6301FA75AE2EB22)
 
+
+<br>
+<br>
+
+
+# SpringCloud 服务降级、熔断
+# 基础知识
+#### 服务雪崩
+- 多个微服务之间调用的时候，假设微服务 A 调用微服务 B 和微服务 C，微服务 B 和微服务 C 又调用其它的微服务，这就是所谓的“扇出”。如果扇出的链路上某个微服务的调用响应时间过长或者不可用，对微服务 A 的调用就会占用越来越多的系统资源，进而引起系统崩溃，也就是所谓的“雪崩效应”
+
+<br>
+<br>
+
+# Hystrix
+#### 概念
+- [Hystrix 官网](https://github.com/Netflix/Hystrix)
+- Hystrix 是一个用于处理分布式系统的延迟和容错的开源库，在分布式系统中，许多依赖不可避免的会调用失败，比如超时、异常等。Hystrix 能够保证在一个依赖出问题的情况下，不会导致整体服务失败，避免级联故障，以提高分布式系统的弹性
+- “断路器”本身是一种开关装置，当某个服务单元发生故障之后，通过断路器的故障监控，向调用反返回一个符合预期的、可处理的备选响应（FallBack），而不是长时间的等待或者抛出调用方无法处理的异常，这样就保证了服务调用方的线程不会被长时间、不必要地占用，从而避免了在分布式系统中的蔓延、乃至雪崩
+
+<br>
+
+#### 工作流程
+1. 创建 HystrixCommand（用在依赖的服务返回单个操作结果的时候）或者 HystrixObserableCommand（用在依赖的服务返回多个操作结果的时候）对象
+2. 命令执行。其中 HystrixCommand 实现了下面前两种执行方式；而 HystrixObserableCommand 实现了后两种执行方式
+  - execute：同步执行，从依赖的服务返回一个单一的结果对象，或者发生错误的时候抛出异常
+  - queue：异步执行，直接返回一个 Future 对象，其中包含了服务执行结束时要返回的单一对象
+  - observe：返回 Obserable 对象，代表了操作的多个结果，是一个 Hot Obserable（不论“事件源”是否有“订阅者”，都会在创建后对事件进行发布，所以对于 Hot Obserable 的每一个“订阅者”都有可能是从“事件源”的中途开始的，并可能只是看到了整个操作的局部过程）
+  - toObserable：同样会返回 Obserable 对象，也代表了操作的多个结果，但它返回的是一个 Cold Obserable（没有“订阅者”的时候并不会发布事件，而是进行等待，直到有“订阅者”之后才发布事件），所以对于 Cold Obserable 的订阅者，可以保证从一开始看到整个操作的全部过程
+3. 若当前命令的请求缓存功能是被启动的，并且该命令缓存命中，那么缓存的结果会立刻以 Obserable 对象的形式返回
+4. 检查断路器是否为打开状态。如果断路器是打开的，那么 Hystrix 不会执行命令，而是转接到 fallback 处理逻辑；如果断路器是关闭的，检查是否有可用资源来执行命令
+5. 线程池/请求队列/信号量是否沾满。如果命令依赖服务的专有线程池和请求队列或者信号量（不使用线程池的时候）已经被占满，那么 Hystrix 也不会执行命令，而是转接到 fallback 处理逻辑
+6. Hystrix 会根据我们编写的方法来决定采取什么样的方式去请求依赖服务
+  - HystrixCommand.run()：返回一个单一的结果
+  - HystrixObserableCommand.construct()：返回一个 Obserable 对象来发射多个结果，或者通过 onError 发送错误通知
+7. Hystrix 会将“成功”、“失败”、“拒绝”、“超时”等信息报告给断路器，而断路器会维护一组计数器来统计这些数据。断路器会使用这些统计数据来决定是否要将断路器打开，来对某个依赖服务的请求进行“熔断/短路”
+8. 当命令执行失败的时候，Hystrix 会进入 fallback 尝试回退处理，我们通常也称该操作为“服务降级”。而能够引起服务降级处理的情况有下面几种
+  - 当命令处于“熔断/短路”状态，断路器是打开的时候
+  - 当前命令的线程池、请求队列、信号量被占满的时候
+  - HystrixObserableCommand.construct() 或者 HystrixCommand.run() 抛出异常的时候
+9. 当 Hystrix 命令执行成功之后，它会将处理结果直接返回或者以 Obserable 的形式返回
+10. 补充：如果我们没有为命令实现降级逻辑或者在降级处理逻辑中抛出了异常， Hystrix 依赖会返回一个 Obserable 对象，但是它不会发射任何结果数据，而是通过 OnError 方法通知命令立即中断请求，并通过 OnError 方法将引起命令失败的异常发送给调用者
+    ![alt](https://uploadfiles.nowcoder.com/images/20230102/630417200_1672641204728/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+#### 缺点
+- Hystrix 停止更新进入维护阶段
+  ![alt](https://uploadfiles.nowcoder.com/images/20221223/630417200_1671785427888/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+<br>
+
+## 服务降级
+- 服务器忙，请稍后再试，不让客户端等待并立刻返回一个友好提示，fallback
+- 引发服务降级的情况：
+  1. 程序运行异常
+  2. 超时
+  3. 服务熔断触发服务降级
+  4. 线程池/信号量打满也会导致服务降级
+
+<br>
+
+### JMeter 压测
+- [官网下载地址](https://jmeter.apache.org/download_jmeter.cgi)
+- [参考入门教程](https://www.cnblogs.com/spareyaya/p/12807638.html)
+- 通过将200个线程，每次执行1秒，循环执行100次 来压测对应的接口可以得出。Tomcat 默认的工作线程被打满了，没有多余的线程来分解压力和处理，导致其他正常的接口也访问变慢、被拖累，或者直接报超时错误
+  ![alt](https://uploadfiles.nowcoder.com/images/20221231/630417200_1672489674013/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+### 解决
+- 通过使用 Hystrix 的服务降级处理返回 fallback 信息。通过在服务提供者主启动类配置 @EnableCircuitBreaker，在消费者启动类配置 @EnableHystrix
+- 注意修改 feign、Hystrix 的默认读取时间为一秒，否则可能导致超时异常，直接被 fallback 捕获
+  ![alt](https://uploadfiles.nowcoder.com/images/20230101/630417200_1672566747517/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+
+#### 客户端
+- 如果全局处理与自定义处理降级都存在，会遵循就近原则，优先执行自定义处理的降级方法
+
+##### 全局处理
+- 在业务类上面配置 @DefaultProperties(defaultFallback = "XXXXXXXXXXXXXXX") +  @HystrixCommand 走的是全局统一配置的降级方法，不用匹配参数
+
+##### 自定义处理
+- 在业务类上面配置 @HystrixCommand，一旦服务调用失败后，会自动调用里面标注的 fallbackMethod 调用指定的方法，同时也可以在 commandProperties 里面的 @HystrixProperty 配置阈值是多长时间 1500
+  ![alt](https://uploadfiles.nowcoder.com/images/20221231/630417200_1672492021535/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+#### 服务端
+- 在 Service 层上面配置 @FeignClient(value = "CLOUD-PROVIDER-HYSTRIX-PAYMENT", fallback = XXXXXXXXX.class)，XXXXXXXX.class 实现该接口，定义降级异常处理。例如 Eureka 注册的服务宕机，就会走 fallback 里面配置的类
+- 如果服务端、客户端同时存在服务降级，会优先处理服务端的降级方法，也就是 @FeignClient 里面配置的 fallback 方法
+  ![alt](https://uploadfiles.nowcoder.com/images/20230101/630417200_1672569908199/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+
+<br>
+
+### 注意
+- 服务端的 hystrix 降级优先级大于客户端的降级
+- FeignClient 的降级大于 HystrixCommand自定义的降级方法
+- HystrixCommand 指定的降级方法大于 DefaultProperties注解的方法
+- yml 文件中 feign、ribbion、hystrix 的读超时时间取三者最小值
+
+<br>
+<br>
+
+## 服务熔断
+- 熔断机制是应对雪崩效应的一种微服务链路保护机制。当扇出链路的某个微服务出错不可用或者响应时间太长时，会进行服务降级，进而熔断该节点微服务的调用，快速返回错误的响应信息。当检测到该节点微服务调用响应正常后，恢复调用链路
+- 服务降级 --》 服务熔断 --》 恢复调用链路
+- Hystrix 当失败的调用到一定阈值，阈值是 10 秒内 20 次调用失败，就会启动熔断机制。通过 @HystrixCommand 注解实现
+- [Martin Fowler 文章](https://martinfowler.com/bliki/CircuitBreaker.html)
+  ![alt](https://uploadfiles.nowcoder.com/images/20230102/630417200_1672635885675/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+
+#### 熔断类型
+- 熔断打开：请求不再进行调用当前服务，内部设置时钟一般为MTTR（平均故障处理时间），也叫 circuitBreaker.sleepWindowInMilliseconds 当打开长达到所设时钟则进入半熔断状态。打开期间，再有请求调用的时候，将不会调用主逻辑，而是直接调用降级 fallback。通过断路器，实现了自动地发现错误并将降级逻辑切换为主逻辑，减少响应延迟的效果
+- 熔断半开：部分请求根据规则调用当前服务，如果请求成功且符合规则则认为当前服务恢复正常，关闭熔断
+- 熔断关闭：不会对服务进行熔断
+
+<br>
+
+#### 断路器的重要参数
+- 全部参数参考 HystrixCommandProperties.class 这个类，有所有参数的默认配置
+- 滚动时间窗：断路器确定是否打开需要统计一些请求和错误数据，而统计的时间范围就是滚动时间窗，默认为最近的10秒
+- 请求总数阈值：在滚动时间窗内，必须满足请求总数阈值才有资格熔断。默认为20，意味着在10秒内，如果该 Hystrix 命令调用次数不足 20 次，即使所有的请求都超时或者其他原因失败，断路器都不会打开
+- 错误百分比阈值：当请求总数在滚动时间窗内超过了阈值，比如发生了 30 次调用，如果在这 30 次调用中，有 15 次发生了超时异常，也就是超过 50% 的错误百分比，在默认设置为 50% 阈值情况下，这时候就会将断路器打开
+- 时间窗口期：用于设置断路器打开后的休眠时间窗，休眠时间窗结束之后，将断路器置为半开状态，尝试进行熔断请求命令，如果成功则关闭；失败则继续打开
+  ![alt](https://uploadfiles.nowcoder.com/images/20230103/630417200_1672724281151/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+
+<br>
+
+#### 断路器打开或者关闭的条件
+- 当在滚动时间窗内超过请求总数阈值时候会打开断路器（默认10秒内超过20个请求失败）
+- 当在滚动时间窗内超过错误百分比阈值的时候会打开断路器（默认10秒内超过50%的请求失败）
+- 一段时间后（默认是5秒），这个时候断路器是半开状态，会释放一次请求进行转发。如果成功，断路器就会关闭；如果失败，就继续开启，并重复此操作。
+
+<br>
+
+#### 熔断的流程
+- 当断路器满足打开条件的时候，会将熔断打开，这时候请求将不会调用主逻辑，而是直接调用降级 fallback 方法。等到一定时间后circuitBreaker.sleepWindowInMilliseconds，会将断路器置为半开状态，并尝试进行熔断请求，如果请求成功且符合规则则认为当前服务恢复正常，关闭熔断；否则继续开启
+
+<br>
+
+#### 服务熔断 与 服务降级 的关系
+- 服务降级的流程一定会调用正常方法再调用 fallback 方法，当单位时间内调用失败次数过多，会触发熔断
+- 服务熔断会跳过正常方法直接调用 fallback 方法，也就是所谓的熔断后服务不可用
+
+
+<br>
+<br>
+
+
+## 服务限流
+- 常用于秒杀高并发等操作，有序进行
+- 参考 Sentinel 的说明
+
+
+<br>
+<br>
+
+
+## Hystrix 图形化 DashBoard 监控
+- Hystrix 提供了准实时的调用监控（Hystrix DashBoard）， Hystrix 会持续地记录所有通过 Hystrix 发起的请求的执行信息，并以统计报表和图形的形式展示给用户，包括每秒执行多少请求多少成功、多少失败等等。SpringCloud 提供了对 Hystrix DashBoard 的整合，对监控内容转化成可视化界面 spring-cloud-starter-netflix-hystrix-dashboard
+- 需要定义一个服务，主启动类上面添加 @EnableHystrixDashboard 注解，在被监控的服务的主启动类上面需要添加配置
+
+``` java
+/**
+     * 此配置是为了服务监控而配置，与服务容错本身无关，springcloud升级后的坑
+     * ServletRegistrationBean因为springboot的默认路径不是"/hystrix.stream"，
+     * 只要在自己的项目里配置上下面的servlet就可以了
+     */
+    @Bean
+    public ServletRegistrationBean getServlet() {
+        HystrixMetricsStreamServlet streamServlet = new HystrixMetricsStreamServlet();
+        ServletRegistrationBean registrationBean = new ServletRegistrationBean(streamServlet);
+        registrationBean.setLoadOnStartup(1);
+        registrationBean.addUrlMappings("/hystrix.stream");
+        registrationBean.setName("HystrixMetricsStreamServlet");
+        return registrationBean;
+    }
+```
+- 之后访问地址：http://127.0.0.1:9001/hystrix
+- 在对应位置填写被监控的服务 http://127.0.0.1:8007/hystrix.stream; delay填写默认2000即可
+  ![alt](https://uploadfiles.nowcoder.com/images/20230103/630417200_1672725763303/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+#### 关于图形化的具体说明
+![alt](https://uploadfiles.nowcoder.com/images/20230103/630417200_1672725974406/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+<br>
+
+
+# resilience4j
+- 后续补充
+
+<br>
+<br>
+
+# sentinel
+- 后续补充
+
+<br>
+<br>
+
+
+# SpringCloud 服务网关
+
+
+
+
+
 <br>
 <br>

@@ -1,0 +1,38 @@
+server:
+  port: 8085
+
+
+spring:
+  application:
+    name: cloud-order-service
+
+
+eureka:
+  client:
+    register-with-eureka: false
+    service-url:
+      # defaultZone: http://localhost:7001/eureka
+      # 集群版
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+
+
+
+# 配置修改 Feign、Hystrix 默认的超时时间、避免一直走 fallback 方法
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 5000
+        read-timeout: 5000
+#  开启降级相关配置
+  hystrix:
+    enabled: true
+
+
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 5000
