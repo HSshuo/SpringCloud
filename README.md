@@ -584,8 +584,220 @@ eureka:
 
 
 # SpringCloud 服务网关
+# 基础知识
+#### 灰色发布
+- 灰色发布也叫金丝雀发布；起源是，矿井工人发现，金丝雀对瓦斯气体很敏感，矿工会在下井之前，先放一只金丝雀到井中，如果金丝雀不叫了，就代表瓦斯浓度高
+- 在灰色发布开始后，先启动一个新版本应用，但是并不直接将流量切过来，而是测试人员对新版本进行线上测试，启动的这个新版本应用，就是我们的金丝雀、如果没有问题，那么可以将少量的用户流量导入到新版本上，然后再对新版本做运行状态观察，收集各种运行时数据，如果此时对新旧版本做各种数据对比，就是所谓的 A/B 测试。如果新版本没有什么问题，那么逐步扩大范围、流量、把所有用户都迁移到新版本上面来                                                 
+  ![alt](https://uploadfiles.nowcoder.com/images/20230102/630417200_1672659590452/D2B5CA33BD970F64A6301FA75AE2EB22)
 
 
+<br>
+<br>
+
+
+# Zuul
+- Zuul 是一种提供动态路由、监视、弹性、安全性等功能的边缘服务
+- Zuul 是 Netflix 出品的一个基于 JVM 路由和服务端的负载均衡器
+- Zuul1.x 是一个基于阻塞 I/O 的 API GateWay，因为基于 Servlet2.5 使用阻塞框架，不支持任何长连接（WebSocket）Zuul的设计模式和 Nginx 比较像，每次 I/O 操作都是从工作线程中选择一个执行，请求线程被阻塞到工作线程完成。Zuul 用 Java 实现，而 JVM 本身会有第一次加载较慢的情况，使得 Zuul 的性能相对较差
+- API 网关为微服务架构中的服务提供了统一的访问入口，客户端通过 API 网关访问相关服务。API 网关的定义类似于设计模式中的门面模式，相当于整个微服务架构中的门面，所有客户端的访问都通过它来进行路由及过滤。它实现了请求路由、负载均衡、校验过滤、服务容错、服务聚合等功能
+
+<br>
+
+#### 功能
+- 代理
+- 路由
+- 过滤
+
+<br>
+
+#### 负载均衡
+- 网关为入口，由网关与微服务进行交互，所以网关必须要实现负载均衡的功能
+- 网关会获取微服务注册中心里面的服务连接地址，再配合一些算法选择其中一个服务地址，进行处理业务。
+- 属于客户端侧的负载均衡，由调用方去实现负载均衡逻辑
+  ![alt](https://uploadfiles.nowcoder.com/images/20230102/630417200_1672659952779/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+<br>
+
+# GateWay
+- [官网地址](https://cloud.spring.io/spring-cloud-static/spring-cloud-gateway/2.2.1.RELEASE/reference/html/)
+- GateWay 是原 Zuul1.X版的替代，在 SpringCloud2.0 以上版本中，没有对新版本的 Zuul2.0 以上最新高性能版本进行继承，仍然还是使用的 Zuul1.x非 Reactor 模式的老版本。而为了提高网关的性能，SpringCloud GateWay 是基于 WebFlux 框架实现的，而 WebFlux 框架底层使用了高性能的 Reactor 模式通信框架 Netty
+- GateWay 是在 Spring 生态系统之上构建的 API 网关服务，基于Spring5.0 + SpringBoot2.0 和 Project Reactor 等技术，旨在为微服务架构提供一种简单有效的统一的 API 路由管理方式且基于 Filter 链的方式提供了网关基本的功能，例如：安全、监控、限流
+
+<br>
+
+#### 工作流程
+- 核心逻辑：**路由转发 + 执行过滤器链**
+- 客户端向 SpringCloud GateWay 发出请求，然后在 GateWay Handler Mapping 中找到与请求相匹配的路由，将其发送到 GateWay Web Handler。Handler 再通过指定的过滤器链来讲请求发送到我们实际的服务执行业务逻辑，然后返回
+- 过滤器之间用虚线分开是因为过滤器可能会在发送代理请求之前（pre）或者之后（post）执行业务，pre 一般可以做参数校验、权限校验、流量监控、日志输出、协议转换等；post 一般可以做响应内容、响应头的更改、日志输出、流量控制等作用               
+  ![alt](https://uploadfiles.nowcoder.com/images/20230105/630417200_1672919713692/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+#### 功能
+- 动态路由：能过匹配任何请求属性，可以对路由指定 Predicate（断言）和 Filter（过滤器）
+- 集成 Hystrix 的断路器功能、集成 SpringCloud 服务发现功能
+- 请求限流功能、流量控制
+- 反向代理、鉴权、日志监控等等
+
+<br>
+
+#### 核心概念
+- web 请求通过一些匹配条件，定位到真正的服务节点。并在这个转发过程的前后，进行一些精细化的控制、Predicate 就是我们的匹配条件，Filter 是过滤器，这两个元素 + 目标 URI，组成一个具体的路由
+- Route（路由）：路由是构建网关的基础模块，它由 ID、目标 URI，一系列的断言和过滤器组成，如果断言为 true 则匹配该路由
+- Predicate（断言）：可以匹配 HTTP 请求中的所有内容（请求头、请求参数），如果请求与断言想匹配则进行路由
+- Filter（过滤）：使用过滤器，可以在请求被路由前或者之后对请求进行修改
+
+<br>
+
+#### 路由配置
+- 注意区分：网关是进行外部调用，ribbon 是内部调用
+- 配置静态路由可以通过注入 RouteLocator 的 Bean 实现路由配置或者直接在 yml上配置
+
+``` java
+
+1、Config配置
+    @Bean
+    public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+        RouteLocatorBuilder.Builder routes = builder.routes();
+
+        routes.route("path_route", r -> r.path("/guonei").uri("http://news.baidu.com/guonei")).build();
+
+        return routes.build();
+
+    }
+    
+    
+
+2、YML配置
+spring:
+  application:
+    name: cloud-gateway
+  cloud:
+    gateway:
+      routes:
+        #路由的ID，没有固定规则但要求唯一，建议配合服务名
+        - id: payment_routh
+          #匹配后提供服务的路由地址
+          uri: http://localhost:8001
+          predicates:
+            #断言，路径相匹配的进行路由
+            - Path=/payment/get/**
+
+        - id: payment_routh2
+          uri: http://localhost:8001
+          predicates:
+            - Path=/payment/lb/**
+
+```
+- 配置动态路由，首先介绍一下路由的三种方式，其中路由协议lb：是指路由的一种通信协议，它实现了负载均衡通信功能
+  1. websocket 方式: ws://host:port
+  2. HTTP 方式：http://host:port
+  3. 负载均衡方式：lb://微服务名
+
+``` yml
+spring:
+  application:
+    name: cloud-gateway
+  cloud:
+    gateway:
+      #开启从注册中心动态创建路由的功能，利用微服务名进行路由
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        #路由的ID，没有固定规则但要求唯一，建议配合服务名
+        - id: payment_routh
+          #匹配后提供服务的路由地址
+          #uri 的协议为 lb，表示启用 GateWay 的负载均衡功能、配置动态路由
+          uri: lb://cloud-payment-service
+          predicates:
+            #断言，路径相匹配的进行路由
+            - Path=/payment/get/**
+
+        - id: payment_routh2
+          uri: lb://cloud-payment-service
+          predicates:
+            - Path=/payment/lb/**
+
+```
+
+<br>
+
+#### 断言(Predicate)配置
+- [Route Predicate Factories](https://cloud.spring.io/spring-cloud-static/spring-cloud-gateway/2.2.1.RELEASE/reference/html/#gateway-request-predicates-factories)
+- Predicate 就是实现了一组匹配规则，让请求过来找到对应的 Route 进行处理
+- SpringCloud GateWay 将路由匹配作为 Spring WebFlux HandlerMapping 基础架构的一部分。SpringCloud GateWay 包括许多内置的 Route Predicate 工厂，这些 Predicate 都与 HTTP 请求的不同属性匹配，多个 Route Predicate 工厂可以进行组合
+- SpringCloud GateWay 创建 Route 对象时，使用 RoutePredicateFactory 创建 Predicate 对象，Predicate 对象可以赋值给 Route。所有这些谓词都匹配 HTTP 请求的不同属性，多种谓词工厂可以组合，并通过逻辑与
+- 启动网关服务之后会发现
+  ![alt](https://uploadfiles.nowcoder.com/images/20230106/630417200_1673001311807/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+
+**常见的 Route Predicate**
+- 如果不如何某一个断言，会爆出 404 错误
+  ![alt](https://uploadfiles.nowcoder.com/images/20230106/630417200_1673005271666/D2B5CA33BD970F64A6301FA75AE2EB22)
+- 常见的断言配置如下
+``` yml
+spring:
+  cloud:
+    gateway:
+      #开启从注册中心动态创建路由的功能，利用微服务名进行路由
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: payment_routh2
+          #uri: http://localhost:8001
+          uri: lb://cloud-payment-service
+          predicates:
+            #配置访问路径
+            - Path=/payment/lb/**
+            #配置时间之后、时间之前、时间范围内可以访问
+            - After=2023-01-06T20:05:04.677+08:00[Asia/Shanghai]
+            - Before=2023-01-06T20:05:04.677+08:00[Asia/Shanghai]
+            - Between=2023-01-06T19:05:04.677+08:00[Asia/Shanghai],2023-01-06T20:05:04.677+08:00[Asia/Shanghai]
+            #配置通过获取对应的cookie name 和 正则表达式去匹配，测试：curl http://127.0.0.1:9527/payment/lb --cookie "username=hshuo"
+            - Cookie=username,hshuo
+            #配置请求头含有X-Request-Id属性并且值为正数的正则表达式匹配，测试：curl http://127.0.0.1:9527/payment/lb -H "X-Request-Id:123"
+            - Header=X-Request-Id, \d+
+            #配置匹配的主机为**.hshuo.com，测试：curl http://127.0.0.1:9527/payment/lb -H "Host: com.hshuo.com"
+            - Host=**.hshuo.com
+            #配置匹配的请求类型为 GET，测试：curl -X -POST http://127.0.0.1:9527/payment/lb
+            - Method=GET
+            ##配置要有参数名username并且值为正数才能路由，测试：curl http://localhost:9527/payment/lb?username=31
+            - Query=username, \d+
+            
+            
+```
+
+<br>
+
+#### 断路器(Filter)配置
+- 路由过滤器可用于修改进入的 HTTP 请求和返回的 HTTP 响应，路由过滤器只能指定路由进行使用。SpringCloud GateWay 内置了多种路由过滤器，都是由 GateWayFilter 的工厂类来产生
+
+<br>
+
+**主要有三种过滤器**
+- [已有的过滤器 GateWayFilter](https://cloud.spring.io/spring-cloud-static/spring-cloud-gateway/2.2.1.RELEASE/reference/html/#gatewayfilter-factories)
+- [全局的过滤器 GlobalFilter](https://cloud.spring.io/spring-cloud-static/spring-cloud-gateway/2.2.1.RELEASE/reference/html/#global-filters)
+- 自定义过滤器，主要通过实现两个接口 GlobalFilter、Ordered
+  ![alt](https://uploadfiles.nowcoder.com/images/20230106/630417200_1673007065825/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+
+#### WebFlux
+- 传统的 Web 框架，例如 Struct2、SpringMVC等都是基于 Servlet API 与 Servlet 容器基础之上运行的
+- Spring WebFlux 是 Spring5.0 引入的新的响应式框架，区别于 SpringMVC，它不需要依赖 Servlet API，是完全异步非阻塞的，基于 Reactor 来实现的响应式流规范，可以运行在 Netty、Undertow、Servlet3.0 以上的容器
+
+
+<br>
+<br>
+
+# SpringCloud 服务配置
 
 
 
