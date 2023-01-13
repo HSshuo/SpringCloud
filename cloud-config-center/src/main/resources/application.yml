@@ -1,0 +1,36 @@
+server:
+  port: 3344
+
+spring:
+  #注册进Eureka服务器的微服务名
+  application:
+    name: cloud-config-center
+  cloud:
+    config:
+      server:
+        git:
+          #Gitee上面的git仓库，测试连接：http://config-3344.com:3344/master/config-dev.yml
+          uri: https://gitee.com/hshuo/spring-cloud-config.git
+#          #GitHub上面的git仓库名字，如果使用此地址需要连接 VPN，会导致在 Host 文件配置的映射失效，所以测试连接：http://127.0.0.1:3344/main/config-dev.yml
+#          uri: https://github.com/HSshuo/SpringCloudConfig.git
+#          #配置git设置，报错
+#          uri: git@github.com:HSshuo/SpringCloudConfig.git
+#          username: huangshuo
+#          password: 1121558338hs
+          #搜索目录
+          search-paths:
+            - SpringCloudConfig
+      #读取分支
+#      label: main
+      label: master
+
+
+
+eureka:
+  #服务提供者provider注册进eureka服务列表内
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+#      defaultZone: http://eureka7001.com:7001/eureka

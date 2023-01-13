@@ -798,8 +798,106 @@ spring:
 <br>
 
 # SpringCloud 服务配置
+# SpringCloud Config
+- 微服务意味着要将单体应用中的业务拆分成一个个子服务，每个服务的粒度相对较小，因此系统中会出现大量的服务。由于每个服务都需要必要的配置信息才能运行，所以一套集中式的、动态的配置管理设施是必不可少的
+- SpringCloud 提供了 ConfigServer 来解决这个问题，每一个微服务自己都有一个 application.yml 文件，对这些上百个配置文件的管理
+
+<br>
+
+#### 概念
+- [官网地址](https://cloud.spring.io/spring-cloud-static/spring-cloud-config/2.2.1.RELEASE/reference/html/)
+- SpringCloud Config 为微服务架构中的微服务提供集中化的外部配置支持。配置服务器为各个不同微服务应用的所有环境提供了一个中心化的外部配置
+- SpringCloud Config 默认使用 Git存储配置文件，同时也支持 SVN、Http等方式
+  ![alt](https://uploadfiles.nowcoder.com/images/20230107/630417200_1673069570635/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+- SpringCloud Config 分为服务端和客户端两部分
+  1. 服务端称为分布式配置中心，是一个独立的微服务应用，用来连接配置服务器并为客户端提供获取配置信息，加密/解密信息等访问接口
+  2. 客户端则是通过指定的配置中心来管理应用资源，以及与业务相关的配置内容，并在启动的时候从配置中心获取和加载配置信息配置服务器，默认采用 git 来存储配置信息，这样有助于对环境配置进行版本管理，并且可以通过 git 客户端工具来方便的管理和访问配置内容
+
+<br>
+
+#### 作用
+- 集中管理配置文件
+- 不同环境不同配置，动态化的配置更新，分布式部署
+- 运行期间动态调整配置，不再需要在每个服务器部署的机器上编写配置文件，服务会向配置中心统一拉取配置自己的信息
+- 当配置发生变动时，服务不需要重启即可感知到配置的变化并应用新的配置
+- 将配置信息以 REST 接口的形式暴露
 
 
+<br>
+
+#### 服务端配置中心
+- 配置 host 文件 C:\Windows\System32\drivers\etc 重启生效
+- 在主启动类上 @@EnableConfigServer 注解，同时引入配置 spring-cloud-config-server
+- [Gitee 地址](https://gitee.com/hshuo/spring-cloud-config/tree/master)
+- [GitHub 地址](https://github.com/HSshuo/SpringCloudConfig/blob/main/README.md)
+``` yml
+spring:
+  #注册进Eureka服务器的微服务名
+  application:
+    name: cloud-config-center
+  cloud:
+    config:
+      server:
+        git:
+          #Gitee上面的git仓库，测试连接：http://config-3344.com:3344/master/config-dev.yml
+          uri: https://gitee.com/hshuo/spring-cloud-config.git
+#          #GitHub上面的git仓库名字，如果使用此地址需要连接 VPN，会导致在 Host 文件配置的映射失效，所以测试连接：http://127.0.0.1:3344/main/config-dev.yml
+#          uri: https://github.com/HSshuo/SpringCloudConfig.git
+#          #配置git设置，报错
+#          uri: git@github.com:HSshuo/SpringCloudConfig.git
+#          username: huangshuo
+#          password: 1121558338hs
+          #搜索目录
+          search-paths:
+            - SpringCloudConfig
+      #读取分支
+#      label: main
+      label: master
+```
+
+
+<br>
+
+#### 客户端配置
+- 引入 pom 配置 spring-cloud-starter-config，同时 Bootstrap.yml 上面的配置为
+- 问题在于，如果远程仓库的配置信息修改，服务端会立刻刷新，但是客户端并不会刷新，需要重启后生效。原因是相当于你更改了配置文件中的信息,要重新启动才能生效,因为里面使用的是@Value注入的方式,这个@Value的值是拿得配置文件里面的值
+``` yml
+spring:
+  application:
+    name: config-client
+  cloud:
+    #Config客户端配置
+    config:
+      label: master #分支名称
+      name: config #配置文件名称
+      profile: dev #读取后缀名称   上述3个综合：master分支上config-dev.yml的配置文件被读取http://config-3344.com:3344/master/config-dev.yml
+      uri: http://localhost:3344 #配置中心地址k
+```
+
+
+<br>
+
+
+#### 客户端动态配置
+- 引入 pom 配置 spring-boot-starter-actuator，暴露对应 actuator 的监控端点，同时在 controller 层使用注解 @RefreshScope
+- 通过运维人员发送 post 请求刷新客户端，这样客户端即可更新最新配置。例如：curl -X POST "http://127.0.0.1:3355/actuator/refresh"
+  ![alt](https://uploadfiles.nowcoder.com/images/20230113/630417200_1673607605384/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+
+<br>
+
+
+#### boostrap.yml
+- application.yml 是用户级的资源配置项，bootstrap.yml 是系统级的。所以 Bootstrap.yml 会比 Application.yml 先加载，同时优先级更高
+- SpringCloud 会创建一个 Bootstrap Context，作为 Spring 应用的 Application Context 的父上下文。初始化的时候，Bootstrap Context 负责从外部源加载配置属性并解析配置。这两个上下文共享一个从外部获取的 Environment
+- Bootstrap 属性有高优先级，默认情况下，不会被本地配置覆盖。Bootstrap Context 和 Application Context 有着不同的约定，所以新增了一个 Bootstrap.yml 文件，保证 Bootstrap Context 和 Application Context 配置的分离
+
+<br>
+<br>
+
+# SpringCloud 服务总线
 
 <br>
 <br>
