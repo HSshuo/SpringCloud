@@ -898,6 +898,62 @@ spring:
 <br>
 
 # SpringCloud 服务总线
+# SpringCloud Bus
+- SpringCloud Bus 能管理和传播分布式系统间的消息，就像一个分布式执行器，可用于广播状态更改、事件推送等，也可以当做微服务间的通信通道
+- SpringCloud Bus 配合 SpringCloud Config 可以实现配置的动态刷新，SpringCloud Bus 用来将分布式系统的节点与轻量级消息系统链接起来的框架，整合了 Java 的事件处理机制和消息中间件的功能，目前支持 RabbitMQ 和 Kafka
+  ![alt](https://uploadfiles.nowcoder.com/images/20230114/630417200_1673695804296/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+
+#### 总线概念
+- 在微服务架构的系统中，通常会使用轻量级的消息代理来构建一个共用的消息主题，并让系统中所有微服务实例都连接上来。由于该主题中产生的消息会被所有实例监听和消费，所以称之为消息总线。在总线上的各个实例，都可以方便地广播一些需要让其他连接在该主题上的实例都知道的消息
+
+<br>
+
+#### 基本原理
+- ConfigClient 实例都监听 MQ 中同一个 topic（默认为 SpringCloud Bus），当一个服务刷新数据的时候，会把这个消息放入 Topic 中，这样其他监听同一 Topic 的服务就可以得到通知，然后去更新自身的配置
+  ![alt](https://uploadfiles.nowcoder.com/images/20230114/630417200_1673694948650/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+#### 设计思想
+1. 利用消息总线触发一个客户端 /bus/refresh，而刷新所有客户端的配置
+   ![alt](https://uploadfiles.nowcoder.com/images/20230114/630417200_1673692150491/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+2. 利用消息总线触发一个服务端 ConfigServer 的 /bus/refresh 端点，而刷新所有的客户端的配置
+   ![alt](https://uploadfiles.nowcoder.com/images/20230114/630417200_1673692163854/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+选择第二个方案，因为：
+- 第一个方案打破了微服务的职责单一性，因为微服务本身是业务模块，本不应该承担配置刷新的职责
+- 破坏了微服务各节点的对等性
+- 有一定的局限性。例如：微服务在迁移时，它的网络地址常常会发生变化，此时如果想要做到自动刷新，那么就会增加更多的修改
+
+
+<br>
+
+#### Docker 安装 rabbitmq
+- [参考](https://blog.csdn.net/qq_45502336/article/details/118699251)
+  ![alt](https://uploadfiles.nowcoder.com/images/20230113/630417200_1673609983388/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+<br>
+
+#### 动态刷新全局广播
+- 引入 spring-cloud-starter-bus-amqp、mq配置；定义暴露监控端点，刷新配置的端点；之后运行curl -X POST "http://127.0.0.1:3344/actuator/bus-refresh"，这里通知的就是 Config Server，引入 Bus 之后就不需要一个一个通知客户端了
+
+<br>
+
+#### 动态刷新定点通知
+- 运行curl -X POST "http://127.0.0.1:3344/actuator/bus-refresh/{destination}"，发给 Config Sever 通过 destination 参数类指定需要更新配置的服务或者实例
+- destination = application.name : port。也就是微服务名称 + 端口号；例如：curl -X POST "http://127.0.0.1:3344/actuator/bus-refresh/config-client:3355"
+
+
+<br>
+<br>
+
+
+# SpringCloud 消息驱动
+
 
 <br>
 <br>
