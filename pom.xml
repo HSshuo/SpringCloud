@@ -26,6 +26,9 @@
         <module>cloud-config-center</module>
         <module>cloud-config-client</module>
         <module>cloud-config-client-slave</module>
+        <module>cloud-stream-rabbitmq-provider</module>
+        <module>cloud-stream-rabbitmq-consumer</module>
+        <module>cloud-stream-rabbitmq-consumer-slave</module>
     </modules>
     <packaging>pom</packaging>
 
