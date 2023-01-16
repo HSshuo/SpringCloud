@@ -1023,11 +1023,37 @@ spring:
 
 
 
-# SpringCloud 链路追踪
+# SpringCloud 链路跟踪
+# SpringCloud Sleuth
+- [官网](https://github.com/spring-cloud/spring-cloud-sleuth)
+- 在微服务框架中，一个由客户端发起的请求在后端系统中会经过多个不同的服务节点调用来协同产生最后的请求结果，每一个前端请求都会形成一条复杂的分布式服务调用链路，链路中的任何一环出现高延时或者错误都会引起整个请求最后的失败
+- SpringCloud Sleuth 提供了一套完整的服务跟踪的解决方案，并兼容支持了 zipkin
+
+<br>
+
+#### Docker 安装 Zipkin
+- [参考](https://blog.csdn.net/apple_csdn/article/details/123529718)
 
 
+<br>
 
 
+#### 概念解读
+- 一条链路通过 Trace Id 唯一标识，Span 标识发起的请求信息，各 span 通过 parent id 关联起来
+  ![alt](https://uploadfiles.nowcoder.com/images/20230116/630417200_1673853572752/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+
+#### 使用
+- 只需要引入依赖 spring-cloud-starter-zipkin 即可，之后通过访问 http://47.95.211.172:9411/zipkin 查看调用状态
+  ![alt](https://uploadfiles.nowcoder.com/images/20230116/630417200_1673856938007/D2B5CA33BD970F64A6301FA75AE2EB22)
+
+
+<br>
+
+#### Elasticsearch 持久化
+- 后续补充
 
 <br>
 <br>

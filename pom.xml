@@ -29,6 +29,8 @@
         <module>cloud-stream-rabbitmq-provider</module>
         <module>cloud-stream-rabbitmq-consumer</module>
         <module>cloud-stream-rabbitmq-consumer-slave</module>
+        <module>cloud-consumer-order-sleuth</module>
+        <module>cloud-provider-payment-sleuth</module>
     </modules>
     <packaging>pom</packaging>
 
