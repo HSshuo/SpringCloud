@@ -1,6 +1,8 @@
 # SpringCloud
 - 参考尚硅谷 SpringCloud 学习源码
 - 依赖版本都是最新版
+- 尚硅谷文档脑图，在doc目录下，直接浏览器就可以打开
+- [资料](https://www.aliyundrive.com/s/AXnfvXkWZ3K)
 
 <br>
 <br>
@@ -158,9 +160,9 @@ eureka:
       defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
 ```
 3. 配置 host 文件 C:\Windows\System32\drivers\etc 配置后重启生效
-![img.png](img.png)
+   ![alt](https://uploadfiles.nowcoder.com/images/20221204/630417200_1670141125452/D2B5CA33BD970F64A6301FA75AE2EB22)
 4. 测试集群是否成功、访问 http://eureka7002.com:7002/、http://eureka7001.com:7001/
-![img_1.png](img_1.png)
+   ![alt](https://uploadfiles.nowcoder.com/images/20221204/630417200_1670141135950/D2B5CA33BD970F64A6301FA75AE2EB22)
 
 <br>
 
@@ -244,7 +246,7 @@ eureka:
 <br>
 
 # Nacos
-- 目前章节主要包含 SpringCloud 内容，后续会补充 SpringCloudAlibaba
+- [Nacos](https://github.com/HSshuo/SpringCloudAlibaba)
 
 <br>
 <br>
@@ -577,7 +579,7 @@ eureka:
 <br>
 
 # sentinel
-- 后续补充
+- [sentinel](https://github.com/HSshuo/SpringCloudAlibaba)
 
 <br>
 <br>
